@@ -16,6 +16,7 @@
  */
 package org.jkiss.dbeaver.ext.oracle.model;
 
+import org.jkiss.code.Nullable;
 import org.jkiss.dbeaver.DBDatabaseException;
 import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.Log;
@@ -112,37 +113,8 @@ public class OracleUtils {
                 return "";
             }
 
-            String ddl;
-            // Read main object DDL
-            try (JDBCPreparedStatement dbStat = session.prepareStatement(
-                "SELECT DBMS_METADATA.GET_DDL(?,?" + (schema == null ? "" : ",?") + ") TXT FROM DUAL")) {
-                dbStat.setString(1, objectType);
-                dbStat.setString(2, object.getName());
-                if (schema != null) {
-                    dbStat.setString(3, schema.getName());
-                }
-                try (JDBCResultSet dbResult = dbStat.executeQuery()) {
-                    if (dbResult.next()) {
-                        Object ddlValue = dbResult.getObject(1);
-                        if (ddlValue instanceof Clob) {
-                            StringWriter buf = new StringWriter();
-                            try (Reader clobReader = ((Clob) ddlValue).getCharacterStream()) {
-                                IOUtils.copyText(clobReader, buf);
-                            } catch (IOException e) {
-                                e.printStackTrace(new PrintWriter(buf, true));
-                            }
-                            ddl = buf.toString();
-
-                        } else {
-                            ddl = CommonUtils.toString(ddlValue);
-                        }
-                    } else {
-                        log.warn("No DDL for " + objectType + " '" + objectFullName + "'");
-                        return "-- EMPTY DDL";
-                    }
-                }
-            }
-            ddl = ddl.trim();
+            String ddl = fetchDDL(session, objectType, object.getName(), schema);
+            if (ddl == null) return "-- EMPTY DDL";
 
             if (monitor.isCanceled()) return ddl;
 
@@ -187,6 +159,56 @@ public class OracleUtils {
                 throw new DBDatabaseException(e, dataSource);
             }
         }
+    }
+
+    @Nullable
+    public static String fetchDDL(
+        JDBCSession session,
+        String objectType,
+        String objectName
+    ) throws SQLException {
+        return fetchDDL(session, objectType, objectName, null);
+    }
+
+    @Nullable
+    public static String fetchDDL(
+        JDBCSession session,
+        String objectType,
+        String objectName,
+        @Nullable OracleSchema schema
+    ) throws SQLException {
+        String ddl;
+        // Read main object DDL
+        try (JDBCPreparedStatement dbStat = session.prepareStatement(
+            "SELECT DBMS_METADATA.GET_DDL(?,?" + (schema == null ? "" : ",?") + ") TXT FROM DUAL")) {
+            dbStat.setString(1, objectType);
+            dbStat.setString(2, objectName);
+            if (schema != null) {
+                dbStat.setString(3, schema.getName());
+            }
+            try (JDBCResultSet dbResult = dbStat.executeQuery()) {
+                if (dbResult.next()) {
+                    Object ddlValue = dbResult.getObject(1);
+                    if (ddlValue instanceof Clob) {
+                        StringWriter buf = new StringWriter();
+                        try (Reader clobReader = ((Clob) ddlValue).getCharacterStream()) {
+                            IOUtils.copyText(clobReader, buf);
+                        } catch (IOException e) {
+                            e.printStackTrace(new PrintWriter(buf, true));
+                        }
+                        ddl = buf.toString();
+
+                    } else {
+                        ddl = CommonUtils.toString(ddlValue);
+                    }
+                } else {
+                    log.warn("No DDL for " + objectType + " '" + objectName + "'");
+                    return null;
+                }
+            }
+        }
+        ddl = ddl.trim();
+        return ddl;
     }
 
     private enum DBMSMetaDependentObjectType {
