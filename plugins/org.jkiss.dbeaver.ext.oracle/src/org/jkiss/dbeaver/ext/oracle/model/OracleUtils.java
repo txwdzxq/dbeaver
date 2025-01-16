@@ -44,7 +44,6 @@ import org.jkiss.utils.CommonUtils;
 import org.jkiss.utils.IOUtils;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.sql.Clob;
@@ -194,7 +193,7 @@ public class OracleUtils {
                         try (Reader clobReader = ((Clob) ddlValue).getCharacterStream()) {
                             IOUtils.copyText(clobReader, buf);
                         } catch (IOException e) {
-                            e.printStackTrace(new PrintWriter(buf, true));
+                            log.warn("Can't write ddl query response to string", e);
                         }
                         ddl = buf.toString();
 

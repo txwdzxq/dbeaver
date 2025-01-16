@@ -115,9 +115,9 @@ public class OracleTablespace extends OracleGlobalObject implements DBPRefreshab
     private volatile Long availableSize;
     private volatile Long usedSize;
 
-    final FileCache fileCache = new FileCache();
-    final SegmentCache segmentCache = new SegmentCache();
-    String ddlStringHolder = null;
+    private final FileCache fileCache = new FileCache();
+    private final SegmentCache segmentCache = new SegmentCache();
+    private String ddlStringHolder = null;
 
     protected OracleTablespace(OracleDataSource dataSource, ResultSet dbResult)
     {
