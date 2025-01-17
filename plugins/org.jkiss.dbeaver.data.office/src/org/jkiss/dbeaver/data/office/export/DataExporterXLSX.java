@@ -33,9 +33,9 @@ import org.jkiss.dbeaver.model.data.*;
 import org.jkiss.dbeaver.model.exec.DBCResultSet;
 import org.jkiss.dbeaver.model.exec.DBCSession;
 import org.jkiss.dbeaver.model.exec.DBExecUtils;
+import org.jkiss.dbeaver.model.impl.struct.AbstractTable;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.model.struct.DBSEntity;
-import org.jkiss.dbeaver.tools.transfer.DTUtils;
 import org.jkiss.dbeaver.tools.transfer.stream.IAppendableDataExporter;
 import org.jkiss.dbeaver.tools.transfer.stream.IStreamDataExporterSite;
 import org.jkiss.dbeaver.tools.transfer.stream.exporter.StreamExporterAbstract;
@@ -286,8 +286,8 @@ public class DataExporterXLSX extends StreamExporterAbstract implements IAppenda
         }
         decorator = GeneralUtils.adapt(getSite().getSource(), DBDAttributeDecorator.class);
 
-        if (columns != null && columns.length > 0) {
-            exportTableName = DTUtils.getTableName(columns[0].getDataSource(), getSite().getSource(), true);
+        if (getSite().getSource() instanceof AbstractTable table) {
+            exportTableName = table.getName();
         }
     }
 
